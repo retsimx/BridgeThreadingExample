@@ -174,11 +174,7 @@ Bridge.assembly("Threading", function ($asm, globals) {
                     System.Console.WriteLine("Max number: " + Threading.Main.MaxNumber + ", Threads: (Main Thread), Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
                 },
                 Start: function () {
-                    // Run the baseline benchmark
-                    Threading.Main.RunBenchmarkOnMainThread();
-
-                    // Run the first benchmark
-                    Threading.Main.BenchmarkPrimes();
+                    window.setTimeout($asm.$.Threading.Main.f4, 500);
                 }
             }
         },
@@ -203,6 +199,13 @@ Bridge.assembly("Threading", function ($asm, globals) {
         },
         f3: function (e) {
             e.dispose();
+        },
+        f4: function () {
+            // Run the baseline benchmark
+            Threading.Main.RunBenchmarkOnMainThread();
+
+            // Run the first benchmark
+            Threading.Main.BenchmarkPrimes();
         }
     });
 });

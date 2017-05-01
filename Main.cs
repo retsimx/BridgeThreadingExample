@@ -12,8 +12,10 @@ namespace Threading
     {
         // The range of numbers to test for primes (0 - n)
         private const int MaxNumber = 10000000;
+
         // If the first 1000 primes from each run should be printed
         private const bool PrintFirst1000Primes = false;
+
         // The list of ints representing the number of threads to execute in each run
         private static readonly List<int> NumberOfThreadsPerTest = new List<int> {1, 2, 4, 6, 8, 12, 16};
 
@@ -23,6 +25,7 @@ namespace Threading
         {
             // The first int in the range
             public int First;
+
             // The last int in the range
             public int Last;
         }
@@ -33,11 +36,11 @@ namespace Threading
             if (number == 1) return false;
             if (number == 2) return true;
 
-            var boundary = (int)Math.Floor(Math.Sqrt(number));
+            var boundary = (int) Math.Floor(Math.Sqrt(number));
 
             for (var i = 2; i <= boundary; ++i)
             {
-                if (number % i == 0)  return false;
+                if (number % i == 0) return false;
             }
 
             return true;
@@ -165,7 +168,9 @@ namespace Threading
                 }
 
                 // Report the statistics from this run
-                Console.WriteLine("Max number: " + MaxNumber + ", Threads: " + numberOfThreads + ", Time taken: " + (endTime - startTime).TotalMilliseconds + "ms, Number of primes: " + primeNumberCount);
+                Console.WriteLine("Max number: " + MaxNumber + ", Threads: " + numberOfThreads + ", Time taken: " +
+                                  (endTime - startTime).TotalMilliseconds + "ms, Number of primes: " +
+                                  primeNumberCount);
 
                 // Check if there are any more runs to do
                 if (NumberOfThreadsPerTest.Count > 0)
@@ -213,19 +218,22 @@ namespace Threading
             }
 
             // Report the statistics from this run
-            Console.WriteLine("Max number: " + MaxNumber + ", Threads: (Main Thread), Time taken: " + (endTime - startTime).TotalMilliseconds + "ms, Number of primes: " + primeNumberCount);
+            Console.WriteLine("Max number: " + MaxNumber + ", Threads: (Main Thread), Time taken: " +
+                              (endTime - startTime).TotalMilliseconds + "ms, Number of primes: " + primeNumberCount);
         }
 
         [Ready]
         public static void Start()
         {
-            // Run the baseline benchmark
-            RunBenchmarkOnMainThread();
+            Window.SetTimeout(() =>
+                {
+                    // Run the baseline benchmark
+                    RunBenchmarkOnMainThread();
 
-            // Run the first benchmark
-            BenchmarkPrimes();
+                    // Run the first benchmark
+                    BenchmarkPrimes();
+                },
+                500);
         }
-
-
     }
 }
