@@ -2344,6 +2344,14 @@
              </summary>
              <param name="buffer">An array of Unicode characters.</param>
             </member>
+        <member name="M:System.Console.Write(System.Char[],System.Int32,System.Int32)">
+             <summary>
+             Writes the specified subarray of Unicode characters to the standard output stream.
+             </summary>
+             <param name="buffer">An array of Unicode characters.</param>
+             <param name="index">The starting position in buffer.</param>
+             <param name="count">The number of characters to write. </param>
+            </member>
         <member name="M:System.Console.WriteLine">
              <summary>
              Writes the current line terminator to the standard output stream.
@@ -2462,27 +2470,17 @@
              </summary>
              <param name="buffer">An array of Unicode characters.</param>
             </member>
-        <member name="M:System.Console.WriteLine(System.Enum)">
+        <member name="M:System.Console.WriteLine(System.Char[],System.Int32,System.Int32)">
              <summary>
-             Writes the text representation of the specified enum value, followed by the current line terminator, to the standard output stream.
+             Writes the specified subarray of Unicode characters to the standard output stream.
              </summary>
-             <param name="value">The value to write.</param>
+             <param name="buffer">An array of Unicode characters.</param>
+             <param name="index">The starting position in buffer.</param>
+             <param name="count">The number of characters to write. </param>
             </member>
         <member name="M:System.Console.WriteLine(System.Nullable{System.Decimal})">
              <summary>
              Writes the text representation of the specified nullable decimal, followed by the current line terminator, to the standard output stream.
-             </summary>
-             <param name="value">The value to write.</param>
-            </member>
-        <member name="M:System.Console.WriteLine(System.Nullable{System.Int64})">
-             <summary>
-             Writes the text representation of the specified nullable 64-bit signed integer, followed by the current line terminator, to the standard output stream.
-             </summary>
-             <param name="value">The value to write.</param>
-            </member>
-        <member name="M:System.Console.WriteLine(System.Nullable{System.UInt64})">
-             <summary>
-             Writes the text representation of the specified nullable 64-bit unsigned integer, followed by the current line terminator, to the standard output stream.
              </summary>
              <param name="value">The value to write.</param>
             </member>

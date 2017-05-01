@@ -70,7 +70,7 @@ Bridge.assembly("Threading", function ($asm, globals) {
                     // Remove this number of threads from the available runs
                     Threading.Main.NumberOfThreadsPerTest.removeAt(0);
 
-                    Bridge.Console.log("Starting next benchmark with " + numberOfThreads + " thread(s)...");
+                    System.Console.WriteLine("Starting next benchmark with " + numberOfThreads + " thread(s)...");
 
                     // Get the start time
                     var startTime = new Date();
@@ -108,7 +108,9 @@ Bridge.assembly("Threading", function ($asm, globals) {
                     Threading.Main.JoinAll(threads, function () {
                         // Get the end time
                         var endTime = new Date();
-                        Bridge.Linq.Enumerable.from(threads).forEach($asm.$.Threading.Main.f3);
+
+                        // Clean up all created threads
+                        threads.forEach($asm.$.Threading.Main.f3);
 
                         // Get the number of prime numbers found
                         var primeNumberCount = primeNumbers.Count;
@@ -124,23 +126,23 @@ Bridge.assembly("Threading", function ($asm, globals) {
                                     s = System.String.concat(s, (primeNumbers.getItem(((((i1 * 10) | 0) + j) | 0)) + " "));
                                 }
 
-                                Bridge.Console.log(s);
+                                System.Console.WriteLine(s);
                             }
                         }
 
                         // Report the statistics from this run
-                        Bridge.Console.log("Max number: " + Threading.Main.MaxNumber + ", Threads: " + numberOfThreads + ", Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
+                        System.Console.WriteLine("Max number: " + Threading.Main.MaxNumber + ", Threads: " + numberOfThreads + ", Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
 
                         // Check if there are any more runs to do
                         if (Threading.Main.NumberOfThreadsPerTest.Count > 0) {
                             Threading.Main.BenchmarkPrimes();
                         } else {
-                            Bridge.Console.log("Complete.");
+                            System.Console.WriteLine("Complete.");
                         }
                     });
                 },
                 RunBenchmarkOnMainThread: function () {
-                    Bridge.Console.log("Starting baseline benchmark on main thread...");
+                    System.Console.WriteLine("Starting baseline benchmark on main thread...");
 
                     // Get the start time
                     var startTime = new Date();
@@ -164,12 +166,12 @@ Bridge.assembly("Threading", function ($asm, globals) {
                                 s = System.String.concat(s, (primeNumbers.getItem(((((i * 10) | 0) + j) | 0)) + " "));
                             }
 
-                            Bridge.Console.log(s);
+                            System.Console.WriteLine(s);
                         }
                     }
 
                     // Report the statistics from this run
-                    Bridge.Console.log("Max number: " + Threading.Main.MaxNumber + ", Threads: (Main Thread), Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
+                    System.Console.WriteLine("Max number: " + Threading.Main.MaxNumber + ", Threads: (Main Thread), Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
                 },
                 Start: function () {
                     // Run the baseline benchmark

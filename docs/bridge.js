@@ -2351,8 +2351,9 @@ window = self;
                 to.$config = config;
             };
 
-            if (obj.Main) {
-                result.$main = obj.Main;
+            if (obj.main) {
+                result.$main = obj.main;
+                delete obj.main;
             }
 
             copy(obj, result);
@@ -2437,7 +2438,7 @@ window = self;
             }
 
             var rNames = ["fields", "events", "props", "ctors", "methods"],
-                defaultScheme = Bridge.isFunction(prop.Main) ? 0 : 1,
+                defaultScheme = Bridge.isFunction(prop.main) ? 0 : 1,
                 check = function (scope) {
                     if (scope.config && Bridge.isPlainObject(scope.config) ||
                         scope.$main && Bridge.isFunction(scope.$main) ||
@@ -2709,8 +2710,11 @@ window = self;
             };
 
             if (isEntryPoint || Bridge.isFunction(prototype.$main)) {
-                if (!Class.Main && prototype.$main) {
-                    Class.Main = prototype.$main;
+                if (prototype.$main) {
+                    var entryName = prototype.$main.name || "Main";
+                    if (!Class[entryName]) {
+                        Class[entryName] = prototype.$main;
+                    }
                 }
 
                 Bridge.Class.$queueEntry.push(Class);
@@ -3134,11 +3138,11 @@ window = self;
                 }
 
                 if (t.prototype.$main) {
-                    (function(cls) {
-                        Bridge.ready(function() {
-                             cls.Main();
+                    (function(cls, name) {
+                        Bridge.ready(function () {
+                             cls[name]();
                         });
-                    })(t);
+                    })(t, t.prototype.$main.name || "Main");
                     
                     t.prototype.$main = null;
                 }
@@ -3405,13 +3409,13 @@ window = self;
                             }
                         }
                     } else {
-                        var fields = Bridge.Reflection.getMembers(type, 4, 4);
+                        var fields = Bridge.Reflection.getMembers(type, 4, 20);
 
                         for (i = 0; i < fields.length; i++) {
                             raw[fields[i].n] = Bridge.Json.serialize(Bridge.Reflection.fieldAccess(fields[i], obj), settings, true, fields[i].rt);
                         }
 
-                        var properties = Bridge.Reflection.getMembers(type, 16, 28),
+                        var properties = Bridge.Reflection.getMembers(type, 16, 20),
                             camelCase = settings && settings.CamelCasePropertyNames;
 
                         for (i = 0; i < properties.length; i++) {
@@ -3637,7 +3641,7 @@ window = self;
 
                     var o = Bridge.createInstance(type);
 
-                    var fields = Bridge.Reflection.getMembers(type, 4, 4),
+                    var fields = Bridge.Reflection.getMembers(type, 4, 20),
                         value,
                         i;
 
@@ -3649,7 +3653,7 @@ window = self;
                         }
                     }
 
-                    var properties = Bridge.Reflection.getMembers(type, 16, 4);
+                    var properties = Bridge.Reflection.getMembers(type, 16, 20);
 
                     for (i = 0; i < properties.length; i++) {
                         var camelCase = settings && settings.CamelCasePropertyNames,
@@ -4349,20 +4353,23 @@ window = self;
             }
 
             var f = function (m) {
-                if ((memberTypes & m.t) && (((bindingAttr & 4) && !m.is) || ((bindingAttr & 8) && m.is)) && (!name || m.n === name)) {
-                    if (params) {
-                        if ((m.p || []).length !== params.length) {
-                            return;
-                        }
-
-                        for (var i = 0; i < params.length; i++) {
-                            if (params[i] !== m.p[i]) {
+                if ((memberTypes & m.t) && (((bindingAttr & 4) && !m.is) || ((bindingAttr & 8) && m.is)) && (!name || ((bindingAttr & 1) === 1 ? (m.n.toUpperCase() === name.toUpperCase()) : (m.n === name)))) {
+                    if ((bindingAttr & 16) === 16 && m.a === 2 ||
+                        (bindingAttr & 32) === 32 && m.a !== 2) {
+                        if (params) {
+                            if ((m.p || []).length !== params.length) {
                                 return;
                             }
-                        }
-                    }
 
-                    result.push(m);
+                            for (var i = 0; i < params.length; i++) {
+                                if (params[i] !== m.p[i]) {
+                                    return;
+                                }
+                            }
+                        }
+
+                        result.push(m);
+                    }
                 }
             };
 
@@ -5130,6 +5137,7 @@ Bridge.define("System.Exception", {
 
         toString: function () {
             var builder = Bridge.getTypeName(this);
+
             if (this.Message != null) {
                 builder += ": " + this.Message + "\n";
             } else {
@@ -5148,18 +5156,23 @@ Bridge.define("System.Exception", {
                 if (Bridge.is(error, System.Exception)) {
                     return error;
                 }
+
                 var ex;
+
                 if (error instanceof TypeError) {
                     ex = new System.NullReferenceException(error.message, new Bridge.ErrorException(error));
                 } else if (error instanceof RangeError) {
                     ex = new System.ArgumentOutOfRangeException(null, error.message, new Bridge.ErrorException(error));
                 } else if (error instanceof Error) {
                     return new Bridge.ErrorException(error);
+                } else if (error && error.error && error.error.stack) {
+                    ex = new System.Exception(error.error.stack);
                 } else {
-                    ex = new System.Exception(error ? error.toString() : null);
+                    ex = new System.Exception(error ? error.message ? error.message : error.toString() : null);
                 }
 
                 ex.errorStack = error;
+
                 return ex;
             }
         }
@@ -9897,7 +9910,9 @@ Bridge.Class.addExtend(System.Boolean, [System.IComparable$1(System.Boolean), Sy
 
     System.Diagnostics.Debug = {
         writeln: function (text) {
-            Bridge.Console.debug(text);
+            if (Bridge.global.console && Bridge.global.console.debug) {
+                Bridge.global.console.debug(text);
+            }
         },
 
         _fail: function (message) {
@@ -12418,6 +12433,16 @@ Bridge.Class.addExtend(System.Boolean, [System.IComparable$1(System.Boolean), Sy
                 }
 
                 return list;
+            },
+
+            forEach: function(action) {
+                if (action == null) {
+                    throw new System.ArgumentNullException("action");
+                }
+ 
+                for (var i = 0; i < this.items.length; i++) {
+                    action(this.items[i]);
+                }
             }
         };
     });
@@ -12529,18 +12554,21 @@ Bridge.define("System.String", {
             }
         },
 
-        format: function (format) {
-            return System.String._format(System.Globalization.CultureInfo.getCurrentCulture(), format, Array.prototype.slice.call(arguments, 1));
+        format: function (format, args) {
+            return System.String._format(System.Globalization.CultureInfo.getCurrentCulture(), format, !Array.isArray(args) ? Array.prototype.slice.call(arguments, 1) : args);
         },
 
-        formatProvider: function (provider, format) {
-            return System.String._format(provider, format, Array.prototype.slice.call(arguments, 2));
+        formatProvider: function (provider, format, args) {
+            return System.String._format(provider, format, !Array.isArray(args) ? Array.prototype.slice.call(arguments, 2) : args);
         },
 
-        _format: function (provider, format, values) {
+        _format: function (provider, format, args) {
+            if (format == null) {
+                throw new System.ArgumentNullException("format");
+            }
+
             var me = this,
                 _formatRe = /(\{+)((\d+|[a-zA-Z_$]\w+(?:\.[a-zA-Z_$]\w+|\[\d+\])*)(?:\,(-?\d*))?(?:\:([^\}]*))?)(\}+)|(\{+)|(\}+)/g,
-                args = values,
                 fn = this.decodeBraceSequence;
 
             return format.replace(_formatRe, function (m, openBrace, elementContent, index, align, format, closeBrace, repeatOpenBrace, repeatCloseBrace) {
@@ -13716,8 +13744,14 @@ Bridge.Class.addExtend(System.String, [System.IComparable$1(System.String), Syst
         inherits: function () { return [System.ICloneable,System.IComparable$1(System.Version),System.IEquatable$1(System.Version)]; },
         statics: {
             fields: {
-                separatorsArray: 46,
-                ZERO_CHAR_VALUE: 48
+                separatorsArray: 0,
+                ZERO_CHAR_VALUE: 0
+            },
+            ctors: {
+                init: function () {
+                    this.separatorsArray = 46;
+                    this.ZERO_CHAR_VALUE = 48;
+                }
             },
             methods: {
                 appendPositiveNumber: function (num, sb) {
@@ -13846,8 +13880,8 @@ Bridge.Class.addExtend(System.String, [System.IComparable$1(System.String), Syst
         fields: {
             _Major: 0,
             _Minor: 0,
-            _Build: -1,
-            _Revision: -1
+            _Build: 0,
+            _Revision: 0
         },
         props: {
             Major: {
@@ -13887,6 +13921,10 @@ Bridge.Class.addExtend(System.String, [System.IComparable$1(System.String), Syst
             "equalsT", "System$IEquatable$1$System$Version$equalsT"
         ],
         ctors: {
+            init: function () {
+                this._Build = -1;
+                this._Revision = -1;
+            },
             $ctor3: function (major, minor, build, revision) {
                 this.$initialize();
                 if (major < 0) {
@@ -19283,21 +19321,23 @@ Bridge.Class.addExtend(System.String, [System.IComparable$1(System.String), Syst
         $kind: "struct",
         statics: {
             fields: {
-                error1: "Byte array for GUID must be exactly {0} bytes long",
+                error1: null,
                 valid: null,
                 split: null,
                 nonFormat: null,
                 replace: null,
-                rnd: null
+                rnd: null,
+                empty: null
             },
             ctors: {
                 init: function () {
+                    this.empty = new System.Guid();
+                    this.error1 = "Byte array for GUID must be exactly {0} bytes long";
                     this.valid = new System.Text.RegularExpressions.Regex.$ctor1("^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", 1);
                     this.split = new System.Text.RegularExpressions.Regex.ctor("^(.{8})(.{4})(.{4})(.{4})(.{12})$");
                     this.nonFormat = new System.Text.RegularExpressions.Regex.$ctor1("^[{(]?([0-9a-f]{8})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{4})-?([0-9a-f]{12})[)}]?$", 1);
                     this.replace = new System.Text.RegularExpressions.Regex.ctor("-");
                     this.rnd = new System.Random.ctor();
-                    this.empty = new System.Guid.ctor();
                 }
             },
             methods: {
@@ -19707,6 +19747,9 @@ Bridge.Class.addExtend(System.String, [System.IComparable$1(System.String), Syst
                 }
             },
             ctors: {
+                init: function () {
+                    this.ExitCode = 0;
+                },
                 ctor: function () {
                     System.Environment.variables = new (System.Collections.Generic.Dictionary$2(System.String,System.String))();
                     System.Environment.patchDictionary(System.Environment.variables);
@@ -25725,9 +25768,16 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
     Bridge.define("System.Random", {
         statics: {
             fields: {
-                MBIG: 2147483647,
-                MSEED: 161803398,
+                MBIG: 0,
+                MSEED: 0,
                 MZ: 0
+            },
+            ctors: {
+                init: function () {
+                    this.MBIG = 2147483647;
+                    this.MSEED = 161803398;
+                    this.MZ = 0;
+                }
             }
         },
         fields: {
@@ -25869,11 +25919,12 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
         statics: {
             fields: {
                 isLittleEndian: false,
-                arg_ArrayPlusOffTooSmall: "Destination array is not long enough to copy all the items in the collection. Check array index and length."
+                arg_ArrayPlusOffTooSmall: null
             },
             ctors: {
                 init: function () {
                     this.isLittleEndian = System.BitConverter.getIsLittleEndian();
+                    this.arg_ArrayPlusOffTooSmall = "Destination array is not long enough to copy all the items in the collection. Check array index and length.";
                 }
             },
             methods: {
@@ -26164,10 +26215,18 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
         inherits: [System.IDisposable],
         statics: {
             fields: {
-                MAX_SUPPORTED_TIMEOUT: 4294967294,
-                EXC_LESS: "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.",
-                EXC_MORE: "Time-out interval must be less than 2^32-2.",
-                EXC_DISPOSED: "The timer has been already disposed."
+                MAX_SUPPORTED_TIMEOUT: 0,
+                EXC_LESS: null,
+                EXC_MORE: null,
+                EXC_DISPOSED: null
+            },
+            ctors: {
+                init: function () {
+                    this.MAX_SUPPORTED_TIMEOUT = 4294967294;
+                    this.EXC_LESS = "Number must be either non-negative and less than or equal to Int32.MaxValue or -1.";
+                    this.EXC_MORE = "Time-out interval must be less than 2^32-2.";
+                    this.EXC_DISPOSED = "The timer has been already disposed.";
+                }
             }
         },
         fields: {
@@ -26302,437 +26361,64 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
 
     // @source console.js
 
-    Bridge.define("Bridge.Console", {
+    Bridge.define("System.Console", {
         statics: {
-            fields: {
-                BODY_WRAPPER_ID: "bridge-body-wrapper",
-                CONSOLE_MESSAGES_ID: "bridge-console-messages",
-                position: "horizontal",
-                instance: null
-            },
-            props: {
-                Instance: {
-                    get: function () {
-                        if (Bridge.Console.instance == null) {
-                            Bridge.Console.instance = new Bridge.Console();
-                        }
-
-                        return Bridge.Console.instance;
-                    }
-                }
-            },
             methods: {
-                logBase: function (value, messageType) {
-                    if (messageType === void 0) { messageType = 0; }
-                    var self = Bridge.Console.Instance;
+                Write: function (value) {
+                    var con = Bridge.global.console;
 
-                    var v = value != null ? value.toString() : "";
-
-                    if (self.bufferedOutput != null) {
-                        self.bufferedOutput = System.String.concat(self.bufferedOutput, v);
-                        return;
+                    if (con && con.log) {
+                        con.log(value);
                     }
+                },
+                WriteLine: function (value) {
+                    var con = Bridge.global.console;
 
-                    Bridge.Console.show();
-
-                    var m = self.buildConsoleMessage(v, messageType);
-                    self.consoleMessages.appendChild(m);
-
-                    self.currentMessageElement = m;
-
-                    if (self.consoleDefined) {
-                        if (messageType === 1 && self.consoleDebugDefined) {
-                            Bridge.global.console.debug(v);
-                        } else {
-                            Bridge.global.console.log(v);
+                    if (con && con.log) {
+                        con.log(value);
+                    }
+                },
+                TransformChars: function (buffer, all, index, count) {
+                    if (all !== 1) {
+                        if (buffer == null) {
+                            throw new System.ArgumentNullException("buffer");
                         }
-                    } else if (self.operaPostErrorDefined) {
-                        Bridge.global.opera.postError(v);
-                    }
-                },
-                error: function (value) {
-                    Bridge.Console.logBase(value, 2);
-                },
-                debug: function (value) {
-                    Bridge.Console.logBase(value, 1);
-                },
-                log: function (value) {
-                    Bridge.Console.logBase(value);
-                },
-                hide: function () {
-                    if (Bridge.Console.instance == null) {
-                        return;
+
+                        if (index < 0) {
+                            throw new System.ArgumentOutOfRangeException("index", "less than zero");
+                        }
+
+                        if (count < 0) {
+                            throw new System.ArgumentOutOfRangeException("count", "less than zero");
+                        }
+
+                        if (((index + count) | 0) > buffer.length) {
+                            throw new System.ArgumentException("index plus count specify a position that is not within buffer.");
+                        }
                     }
 
-                    var self = Bridge.Console.Instance;
+                    var s = "";
+                    if (buffer != null) {
+                        if (all === 1) {
+                            index = 0;
+                            count = buffer.length;
+                        }
 
-                    if (self.hidden) {
-                        return;
+                        for (var i = index; i < ((index + count) | 0); i = (i + 1) | 0) {
+                            s = System.String.concat(s, String.fromCharCode(buffer[System.Array.index(i, buffer)]));
+                        }
                     }
 
-                    self.close();
+                    return s;
                 },
-                show: function () {
-                    var self = Bridge.Console.Instance;
+                Clear: function () {
+                    var con = Bridge.global.console;
 
-                    if (!self.hidden) {
-                        return;
-                    }
-
-                    self.init(true);
-                },
-                toggle: function () {
-                    if (Bridge.Console.Instance.hidden) {
-                        Bridge.Console.show();
-                    } else {
-                        Bridge.Console.hide();
+                    if (con && con.clear) {
+                        con.clear();
                     }
                 }
             }
-        },
-        fields: {
-            svgNS: "http://www.w3.org/2000/svg",
-            consoleHeight: "300px",
-            consoleHeaderHeight: "35px",
-            tooltip: null,
-            consoleWrapper: null,
-            consoleMessages: null,
-            bridgeIcon: null,
-            bridgeIconPath: null,
-            bridgeConsoleLabel: null,
-            closeBtn: null,
-            closeIcon: null,
-            closeIconPath: null,
-            consoleHeader: null,
-            consoleBody: null,
-            hidden: true,
-            consoleDefined: false,
-            consoleDebugDefined: false,
-            operaPostErrorDefined: false,
-            currentMessageElement: null,
-            bufferedOutput: null
-        },
-        ctors: {
-            ctor: function () {
-                this.$initialize();
-                this.init();
-            }
-        },
-        methods: {
-            init: function (reinit) {
-                if (reinit === void 0) { reinit = false; }
-                this.hidden = false;
-
-                var consoleWrapperStyles = Bridge.fn.bind(this, $asm.$.Bridge.Console.f1)(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                var consoleHeaderStyles = $asm.$.Bridge.Console.f2(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                var consoleBodyStyles = $asm.$.Bridge.Console.f3(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                // Bridge Icon
-                this.bridgeIcon = this.bridgeIcon || document.createElementNS(this.svgNS, "svg");
-
-                var items = Bridge.fn.bind(this, $asm.$.Bridge.Console.f4)(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                this.setAttributes(this.bridgeIcon, items);
-
-                this.bridgeIconPath = this.bridgeIconPath || document.createElementNS(this.svgNS, "path");
-
-                var items2 = new (System.Collections.Generic.Dictionary$2(System.String,System.String))();
-                items2.set("d", "M19 14.4h2.2V9.6L19 7.1v7.3zm4.3-2.5v2.5h2.2l-2.2-2.5zm-8.5 2.5H17V4.8l-2.2-2.5v12.1zM0 14.4h3l7.5-8.5v8.5h2.2V0L0 14.4z");
-                items2.set("fill", "#555");
-
-                this.setAttributes(this.bridgeIconPath, items2);
-
-                // Bridge Console Label
-                this.bridgeConsoleLabel = this.bridgeConsoleLabel || document.createElement("span");
-                this.bridgeConsoleLabel.innerHTML = "Bridge Console";
-
-                // Close Button
-                this.closeBtn = this.closeBtn || document.createElement("span");
-                this.closeBtn.setAttribute("style", "position: relative;display: inline-block;float: right;cursor: pointer");
-
-                this.closeIcon = this.closeIcon || document.createElementNS(this.svgNS, "svg");
-
-                var items3 = Bridge.fn.bind(this, $asm.$.Bridge.Console.f5)(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                this.setAttributes(this.closeIcon, items3);
-
-                this.closeIconPath = this.closeIconPath || document.createElementNS(this.svgNS, "path");
-
-                var items4 = $asm.$.Bridge.Console.f6(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                this.setAttributes(this.closeIconPath, items4);
-
-                this.tooltip = this.tooltip || document.createElement("div");
-                this.tooltip.innerHTML = "Refresh page to open Bridge Console";
-
-                this.tooltip.setAttribute("style", "position: absolute;right: 30px;top: -6px;white-space: nowrap;padding: 7px;border-radius: 3px;background-color: rgba(0, 0, 0, 0.75);color: #eee;text-align: center;visibility: hidden;opacity: 0;-webkit-transition: all 0.25s ease-in-out;transition: all 0.25s ease-in-out;z-index: 1;");
-
-                // Styles and other stuff based on position
-                // Force to horizontal for now
-                Bridge.Console.position = "horizontal";
-
-                if (Bridge.referenceEquals(Bridge.Console.position, "horizontal")) {
-                    this.wrapBodyContent();
-
-                    consoleWrapperStyles.set("right", "0");
-                    consoleHeaderStyles.set("border-top", "1px solid #a3a3a3");
-                    consoleBodyStyles.set("height", this.consoleHeight);
-                } else if (Bridge.referenceEquals(Bridge.Console.position, "vertical")) {
-                    var consoleWidth = "400px";
-                    document.body.style.marginLeft = consoleWidth;
-
-                    consoleWrapperStyles.set("top", "0");
-                    consoleWrapperStyles.set("width", consoleWidth);
-                    consoleWrapperStyles.set("border-right", "1px solid #a3a3a3");
-                    consoleBodyStyles.set("height", "100%");
-                }
-
-                // Console wrapper
-                this.consoleWrapper = this.consoleWrapper || document.createElement("div");
-                this.consoleWrapper.setAttribute("style", this.obj2Css(consoleWrapperStyles));
-
-                // Console Header
-                this.consoleHeader = this.consoleHeader || document.createElement("div");
-                this.consoleHeader.setAttribute("style", this.obj2Css(consoleHeaderStyles));
-
-                // Console Body Wrapper
-                this.consoleBody = this.consoleBody || document.createElement("div");
-                this.consoleBody.setAttribute("style", this.obj2Css(consoleBodyStyles));
-
-                // Console Messages Unordered List Element
-                this.consoleMessages = this.consoleMessages || document.createElement("ul");
-                var cm = this.consoleMessages;
-                cm.id = Bridge.Console.CONSOLE_MESSAGES_ID;
-
-                cm.setAttribute("style", "margin: 0;padding: 0;list-style: none;");
-
-                if (!reinit) {
-                    this.bridgeIcon.appendChild(this.bridgeIconPath);
-                    this.closeIcon.appendChild(this.closeIconPath);
-                    this.closeBtn.appendChild(this.closeIcon);
-                    this.closeBtn.appendChild(this.tooltip);
-
-                    // Add child elements into console header
-                    this.consoleHeader.appendChild(this.bridgeIcon);
-                    this.consoleHeader.appendChild(this.bridgeConsoleLabel);
-                    this.consoleHeader.appendChild(this.closeBtn);
-
-                    // Add messages to console body
-                    this.consoleBody.appendChild(cm);
-
-                    // Add console header and console body into console wrapper
-                    this.consoleWrapper.appendChild(this.consoleHeader);
-                    this.consoleWrapper.appendChild(this.consoleBody);
-
-                    // Finally add console to body
-                    document.body.appendChild(this.consoleWrapper);
-
-                    // Close console
-                    this.closeBtn.addEventListener("click", Bridge.fn.cacheBind(this, this.close));
-
-                    // Show/hide Tooltip
-                    this.closeBtn.addEventListener("mouseover", Bridge.fn.cacheBind(this, this.showTooltip));
-                    this.closeBtn.addEventListener("mouseout", Bridge.fn.cacheBind(this, this.hideTooltip));
-
-                    this.consoleDefined = Bridge.isDefined(Bridge.global) && Bridge.isDefined(Bridge.global.console);
-                    this.consoleDebugDefined = this.consoleDefined && Bridge.isDefined(Bridge.unbox(Bridge.global.console.debug));
-                    this.operaPostErrorDefined = Bridge.isDefined(Bridge.global.opera) && Bridge.isDefined(Bridge.unbox(Bridge.global.opera.postError));
-                }
-            },
-            showTooltip: function () {
-                var self = Bridge.Console.Instance;
-                self.tooltip.style.right = "20px";
-                self.tooltip.style.visibility = "visible";
-                self.tooltip.style.opacity = "1";
-            },
-            hideTooltip: function () {
-                var self = Bridge.Console.Instance;
-                self.tooltip.style.right = "30px";
-                self.tooltip.style.opacity = "0";
-            },
-            close: function () {
-                this.hidden = true;
-
-                this.consoleWrapper.style.display = "none";
-
-                if (Bridge.referenceEquals(Bridge.Console.position, "horizontal")) {
-                    this.unwrapBodyContent();
-                } else if (Bridge.referenceEquals(Bridge.Console.position, "vertical")) {
-                    document.body.removeAttribute("style");
-                }
-            },
-            wrapBodyContent: function () {
-                if (document.body == null) {
-                    return;
-                }
-
-                // get body margin and padding for proper alignment of scroll if a body margin/padding is used.
-                var bodyStyle = document.defaultView.getComputedStyle(document.body, null);
-
-                var bodyPaddingTop = bodyStyle.paddingTop;
-                var bodyPaddingRight = bodyStyle.paddingRight;
-                var bodyPaddingBottom = bodyStyle.paddingBottom;
-                var bodyPaddingLeft = bodyStyle.paddingLeft;
-
-                var bodyMarginTop = bodyStyle.marginTop;
-                var bodyMarginRight = bodyStyle.marginRight;
-                var bodyMarginBottom = bodyStyle.marginBottom;
-                var bodyMarginLeft = bodyStyle.marginLeft;
-
-                var div = document.createElement("div");
-                div.id = Bridge.Console.BODY_WRAPPER_ID;
-                div.setAttribute("style", System.String.concat("height: calc(100vh - ", this.consoleHeight, " - ", this.consoleHeaderHeight, ");", "margin-top: calc(-1 * ", "(", (System.String.concat(bodyMarginTop, " + ", bodyPaddingTop)), "));", "margin-right: calc(-1 * ", "(", (System.String.concat(bodyMarginRight, " + ", bodyPaddingRight)), "));", "margin-left: calc(-1 * ", "(", (System.String.concat(bodyMarginLeft, " + ", bodyPaddingLeft)), "));", "padding-top: calc(", (System.String.concat(bodyMarginTop, " + ", bodyPaddingTop)), ");", "padding-right: calc(", (System.String.concat(bodyMarginRight, " + ", bodyPaddingRight)), ");", "padding-bottom: calc(", (System.String.concat(bodyMarginBottom, " + ", bodyPaddingBottom)), ");", "padding-left: calc(", (System.String.concat(bodyMarginLeft, " + ", bodyPaddingLeft)), ");", "overflow-x: auto;", "box-sizing: border-box !important;"));
-
-                while (document.body.firstChild != null) {
-                    div.appendChild(document.body.firstChild);
-                }
-
-                document.body.appendChild(div);
-            },
-            unwrapBodyContent: function () {
-                var bridgeBodyWrapper = document.getElementById(Bridge.Console.BODY_WRAPPER_ID);
-
-                if (bridgeBodyWrapper == null) {
-                    return;
-                }
-
-                while (bridgeBodyWrapper.firstChild != null) {
-                    document.body.insertBefore(bridgeBodyWrapper.firstChild, bridgeBodyWrapper);
-                }
-
-                document.body.removeChild(bridgeBodyWrapper);
-            },
-            buildConsoleMessage: function (message, messageType) {
-                var messageItem = document.createElement("li");
-                messageItem.setAttribute("style", "padding: 5px 10px;border-bottom: 1px solid #f0f0f0;");
-
-                var messageIcon = document.createElementNS(this.svgNS, "svg");
-
-                var items5 = Bridge.fn.bind(this, $asm.$.Bridge.Console.f7)(new (System.Collections.Generic.Dictionary$2(System.String,System.String))());
-
-                this.setAttributes(messageIcon, items5);
-
-                var color = "#555";
-
-                if (messageType === 2) {
-                    color = "#d65050";
-                } else if (messageType === 1) {
-                    color = "#1800FF";
-                }
-
-                var messageIconPath = document.createElementNS(this.svgNS, "path");
-
-                var items6 = new (System.Collections.Generic.Dictionary$2(System.String,System.String))();
-
-                items6.set("d", "M3.8 3.5L.7 6.6s-.1.1-.2.1-.1 0-.2-.1l-.2-.3C0 6.2 0 6.2 0 6.1c0 0 0-.1.1-.1l2.6-2.6L.1.7C0 .7 0 .6 0 .6 0 .5 0 .5.1.4L.4.1c0-.1.1-.1.2-.1s.1 0 .2.1l3.1 3.1s.1.1.1.2-.1.1-.2.1z");
-                items6.set("fill", color);
-
-                this.setAttributes(messageIconPath, items6);
-
-                messageIcon.appendChild(messageIconPath);
-
-                var messageContainer = document.createElement("span");
-                messageContainer.innerHTML = message;
-                messageContainer.setAttribute("style", System.String.concat("color: ", color, "; white-space: pre;"));
-
-                messageItem.appendChild(messageIcon);
-                messageItem.appendChild(messageContainer);
-
-                return messageItem;
-            },
-            setAttributes: function (el, attrs) {
-                var $t;
-                $t = Bridge.getEnumerator(attrs);
-                try {
-                    while ($t.moveNext()) {
-                        var item = $t.Current;
-                        el.setAttribute(item.key, item.value);
-                    }
-                }finally {
-                    if (Bridge.is($t, System.IDisposable)) {
-                        $t.System$IDisposable$dispose();
-                    }
-                }},
-            obj2Css: function (obj) {
-                var $t;
-                var str = "";
-
-                $t = Bridge.getEnumerator(obj);
-                try {
-                    while ($t.moveNext()) {
-                        var item = $t.Current;
-                        str = System.String.concat(str, (System.String.concat(item.key.toLowerCase(), ":", item.value, ";")));
-                    }
-                }finally {
-                    if (Bridge.is($t, System.IDisposable)) {
-                        $t.System$IDisposable$dispose();
-                    }
-                }
-                return str;
-            }
-        }
-    });
-
-    Bridge.ns("Bridge.Console", $asm.$);
-
-    Bridge.apply($asm.$.Bridge.Console, {
-        f1: function (_o1) {
-            _o1.add("position", "fixed");
-            _o1.add("left", "0");
-            _o1.add("bottom", "0");
-            _o1.add("padding-top", this.consoleHeaderHeight);
-            _o1.add("background-color", "#fff");
-            _o1.add("font", "normal normal normal 13px/1 sans-serif");
-            _o1.add("color", "#555");
-            return _o1;
-        },
-        f2: function (_o2) {
-            _o2.add("position", "absolute");
-            _o2.add("top", "0");
-            _o2.add("left", "0");
-            _o2.add("right", "0");
-            _o2.add("height", "35px");
-            _o2.add("padding", "9px 15px 7px 10px");
-            _o2.add("border-bottom", "1px solid #ccc");
-            _o2.add("background-color", "#f3f3f3");
-            _o2.add("box-sizing", "border-box");
-            return _o2;
-        },
-        f3: function (_o3) {
-            _o3.add("overflow-x", "auto");
-            _o3.add("font-family", "Menlo, Monaco, Consolas, 'Courier New', monospace");
-            return _o3;
-        },
-        f4: function (_o4) {
-            _o4.add("xmlns", this.svgNS);
-            _o4.add("width", "25.5");
-            _o4.add("height", "14.4");
-            _o4.add("viewBox", "0 0 25.5 14.4");
-            _o4.add("style", "margin: 0 3px 3px 0;vertical-align:middle;");
-            return _o4;
-        },
-        f5: function (_o5) {
-            _o5.add("xmlns", this.svgNS);
-            _o5.add("width", "11.4");
-            _o5.add("height", "11.4");
-            _o5.add("viewBox", "0 0 11.4 11.4");
-            _o5.add("style", "vertical-align: middle;");
-            return _o5;
-        },
-        f6: function (_o6) {
-            _o6.add("d", "M11.4 1.4L10 0 5.7 4.3 1.4 0 0 1.4l4.3 4.3L0 10l1.4 1.4 4.3-4.3 4.3 4.3 1.4-1.4-4.3-4.3");
-            _o6.add("fill", "#555");
-            return _o6;
-        },
-        f7: function (_o7) {
-            _o7.add("xmlns", this.svgNS);
-            _o7.add("width", "3.9");
-            _o7.add("height", "6.7");
-            _o7.add("viewBox", "0 0 3.9 6.7");
-            _o7.add("style", "margin-right: 7px; vertical-align: middle;");
-            return _o7;
         }
     });
 
@@ -26744,6 +26430,11 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
                 _isWebWorker: false,
                 _worker: null,
                 _threadId: 0
+            },
+            ctors: {
+                init: function () {
+                    this._isWebWorker = false;
+                }
             },
             methods: {
                 isWebWorker: function () {
@@ -27146,5 +26837,5 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
 // http://stackoverflow.com/a/18002694
 if (typeof WorkerGlobalScope !== 'undefined' && self instanceof WorkerGlobalScope) {
 	// Call the web worker manager entry point
-    System.Threading.Utils.WorkerThreadManager.workerThreadManagerEntryPoint();
+    Bridge.init(System.Threading.Utils.WorkerThreadManager.workerThreadManagerEntryPoint);
 }
