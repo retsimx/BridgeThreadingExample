@@ -5,3 +5,10 @@
 /home/lewis/Projects/BridgeThreadingExample/obj/Debug/Threading.dll.mdb
 /home/lewis/Projects/BridgeThreadingExample/bin/Debug/Bridge.dll
 /home/lewis/Projects/BridgeThreadingExample/bin/Debug/Bridge.Html5.dll
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/obj/Debug/.NETFramework,Version=v4.5.AssemblyAttribute.cs
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/obj/Debug/Threading.dll
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/obj/Debug/Threading.dll.mdb
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/bin/Debug/Threading.dll.mdb
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/bin/Debug/Threading.dll
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/bin/Debug/Bridge.dll
+/home/lewis/Projects/BridgeThreadingExample/BridgeThreadingExample/bin/Debug/Bridge.Html5.dll

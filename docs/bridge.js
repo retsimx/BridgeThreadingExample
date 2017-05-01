@@ -26888,7 +26888,7 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
                                     var line = $t.Current;
                                     // Next we sprit the string up and extract the file name from the line, file name is inside brackets, but also includes the line and column, so we need to extract between ( and :
                                     if (System.String.contains(line,"://") && System.String.contains(line,".js")) {
-                                        var s = System.String.concat(System.Linq.Enumerable.from(System.String.split(System.Linq.Enumerable.from(System.String.split(line, [40].map(function(i) {{ return String.fromCharCode(i); }}))).last(), System.Array.init([".js:"], System.String), null, 0)).first(), ".js");
+                                        var s = System.String.concat(System.Linq.Enumerable.from(System.String.split(System.Linq.Enumerable.from(System.String.split(line, System.Array.init([40, 64], System.Char).map(function(i) {{ return String.fromCharCode(i); }}))).last(), System.Array.init([".js:"], System.String), null, 0)).first(), ".js");
                                         // Remove leading or trailing whitespace
                                         s = s.trim();
                                         // Sometimes the line will start with "at ", so we need to check and remove
