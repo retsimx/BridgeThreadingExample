@@ -26880,9 +26880,9 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
                             // Catch the error and get the stack trace from the error
                             var stack = Bridge.cast(error.error.stack, System.String);
                             // Split the stack trace in to lines
-                            var stackLines = System.String.split(stack, [10].map(function(i) {{ return String.fromCharCode(i); }}));
+                            var stackLines = System.Linq.Enumerable.from(System.String.split(stack, [10].map(function(i) {{ return String.fromCharCode(i); }}))).where($asm.$.System.Threading.Thread.f1);
                             // Next we skip over the first two lines in the stack trace, since the first line is "Error" and the second line is this javascript file where the exception occurred
-                            $t = Bridge.getEnumerator(System.Linq.Enumerable.from(stackLines).skip(2));
+                            $t = Bridge.getEnumerator(stackLines.skip(1));
                             try {
                                 while ($t.moveNext()) {
                                     var line = $t.Current;
@@ -27116,6 +27116,14 @@ Bridge.define("System.Text.RegularExpressions.RegexParser", {
                     this._isDead = true;
                 }
             }
+        }
+    });
+
+    Bridge.ns("System.Threading.Thread", $asm.$);
+
+    Bridge.apply($asm.$.System.Threading.Thread, {
+        f1: function (e) {
+            return System.String.contains(e,"@") || System.String.contains(e,"at");
         }
     });
 
