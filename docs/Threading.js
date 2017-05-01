@@ -1,7 +1,7 @@
 /**
  * @version 1.0.0.0
  * @copyright Copyright ©  2017
- * @compiler Bridge.NET 16.0.0
+ * @compiler Bridge.NET 16.0.0-beta
  */
 Bridge.assembly("Threading", function ($asm, globals) {
     "use strict";
@@ -9,12 +9,14 @@ Bridge.assembly("Threading", function ($asm, globals) {
     Bridge.define("Threading.Main", {
         statics: {
             fields: {
-                MaxNumber: 10000000,
+                MaxNumber: 0,
                 PrintFirst1000Primes: false,
                 NumberOfThreadsPerTest: null
             },
             ctors: {
                 init: function () {
+                    this.MaxNumber = 10000000;
+                    this.PrintFirst1000Primes = false;
                     this.NumberOfThreadsPerTest = $asm.$.Threading.Main.f1(new (System.Collections.Generic.List$1(System.Int32))());
                     Bridge.ready(this.Start);
                 }
