@@ -89,7 +89,7 @@ Bridge.assembly("Threading", function ($asm, globals) {
                             var range = { First: ((((i * countPerThread) | 0) + 1) | 0), Last: ((((((i * countPerThread) | 0) + countPerThread) | 0) + 1) | 0) };
 
                             // Create the new thread
-                            var t = new System.Threading.Thread(System.Array.init([System.Threading.Thread.getCurrentJsFilePath()], System.String));
+                            var t = new System.Threading.Thread(System.Array.init([System.Threading.Thread.getCurrentJsFileUri()], System.String));
 
                             // Start the thread
                             t.start('Threading.Main.RunPrime', range, function (thread, param, result) {

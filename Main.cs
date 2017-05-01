@@ -115,7 +115,7 @@ namespace Threading
                     new[]
                     {
                         // Include this javascript file (since bridge is loaded automatically)
-                        Thread.GetCurrentJsFilePath()
+                        Thread.GetCurrentJsFileUri()
                     }
                 );
 

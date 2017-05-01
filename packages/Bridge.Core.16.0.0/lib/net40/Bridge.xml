@@ -9458,7 +9458,7 @@
              </summary>
              <param name="timeout">The amount of time for which the thread is suspended. Should be positive or -1. -1 works the same as 0 (not Infinite)</param>
             </member>
-        <member name="M:System.Threading.Thread.GetCurrentJsFilePath">
+        <member name="M:System.Threading.Thread.GetCurrentJsFileUri">
              <summary>
              Gets the Uri of the javascript file that called this function.
              Useful for fetching the file paths for javascript files used in threading.
