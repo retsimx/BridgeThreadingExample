@@ -91,12 +91,12 @@ Bridge.assembly("Threading", function ($asm, globals) {
                             var range = { First: ((((i * countPerThread) | 0) + 1) | 0), Last: ((((((i * countPerThread) | 0) + countPerThread) | 0) + 1) | 0) };
 
                             // Create the new thread
-                            var t = new System.Threading.Thread(System.Array.init([System.Threading.Thread.getCurrentJsFileUri()], System.String));
+                            var t = new System.Threading.Thread.$ctor1(System.Array.init([System.Threading.Thread.getCurrentJsFileUri()], System.String));
 
                             // Start the thread
                             t.start('Threading.Main.RunPrime', range, function (thread, param, result) {
                                     // Cast the result object to an int array
-                                    var resultPrimes = Bridge.cast(result, System.Array.type(System.Int32));
+                                    var resultPrimes = Bridge.as(result, System.Array.type(System.Int32));
                                     // Add the primes to the list of primes
                                     primeNumbers.addRange(resultPrimes);
                                 });
@@ -139,6 +139,10 @@ Bridge.assembly("Threading", function ($asm, globals) {
                         if (Threading.Main.NumberOfThreadsPerTest.Count > 0) {
                             Threading.Main.BenchmarkPrimes();
                         } else {
+                            // Run the baseline benchmark
+                            Threading.Main.RunBenchmarkOnMainThread();
+
+                            // All done
                             System.Console.WriteLine("Complete.");
                         }
                     });
@@ -176,7 +180,29 @@ Bridge.assembly("Threading", function ($asm, globals) {
                     System.Console.WriteLine("Max number: " + Threading.Main.MaxNumber + ", Threads: (Main Thread), Time taken: " + System.Double.format((System.DateTime.subdd(endTime, startTime)).getTotalMilliseconds(), 'G') + "ms, Number of primes: " + primeNumberCount);
                 },
                 Start: function () {
-                    window.setTimeout($asm.$.Threading.Main.f4, 500);
+                    // Create a thread to demonstrate message passing
+                    var t = new System.Threading.Thread.$ctor1(System.Array.init([System.Threading.Thread.getCurrentJsFileUri()], System.String));
+
+                    // Set a message handler on the thread
+                    t.addOnMessage($asm.$.Threading.Main.f4);
+
+                    // Send a message to the worker
+                    t.postMessage("hello from main thread:)");
+
+                    window.setTimeout(Threading.Main.BenchmarkPrimes, 500);
+                },
+                MessagePassingThread: function () {
+                    if (!System.Threading.Thread.CurrentThread.IsWebWorker) {
+                        return;
+                    }
+
+                    // Set an on message handler for this web worker
+                    System.Threading.Thread.CurrentThread.addOnMessage(function (o) {
+                        // log the received message
+                        console.log("Got message in worker: ", Bridge.unbox(o));
+                        // Send a message back in reply
+                        System.Threading.Thread.CurrentThread.postMessage("hello from the worker thread :)");
+                    });
                 }
             }
         },
@@ -202,12 +228,11 @@ Bridge.assembly("Threading", function ($asm, globals) {
         f3: function (e) {
             e.dispose();
         },
-        f4: function () {
-            // Run the baseline benchmark
-            Threading.Main.RunBenchmarkOnMainThread();
-
-            // Run the first benchmark
-            Threading.Main.BenchmarkPrimes();
+        f4: function (o) {
+            // Print the message received from the thread
+            console.log("Got message in main thread: ", Bridge.unbox(o));
         }
     });
+
+    Bridge.init(function () { Threading.Main.MessagePassingThread(); });
 });

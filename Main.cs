@@ -50,7 +50,7 @@ namespace Threading
         private static object RunPrime(object param)
         {
             // Convert the parameter to a range object
-            var range = (PrimeRange) param;
+            var range = param as PrimeRange;
             // Create an array to store the list of prime numbers found in the range
             var primes = new List<int>();
             // Iterate over the range and add any prime numbers to the primes array
@@ -129,7 +129,7 @@ namespace Threading
                     (thread, param, result) =>
                     {
                         // Cast the result object to an int array
-                        var resultPrimes = (int[]) result;
+                        var resultPrimes = result as int[];
                         // Add the primes to the list of primes
                         primeNumbers.AddRange(resultPrimes);
                     }
@@ -177,8 +177,13 @@ namespace Threading
                     // Yes, run the next benchmark
                     BenchmarkPrimes();
                 else
-                    // No, all done
+                {
+                    // Run the baseline benchmark
+                    RunBenchmarkOnMainThread();
+
+                    // All done
                     Console.WriteLine("Complete.");
+                }
             });
         }
 
@@ -225,15 +230,45 @@ namespace Threading
         [Ready]
         public static void Start()
         {
-            Window.SetTimeout(() =>
+            // Create a thread to demonstrate message passing
+            var t = new Thread(
+                // Specify the source files
+                new[]
                 {
-                    // Run the baseline benchmark
-                    RunBenchmarkOnMainThread();
+                    // Include this javascript file (since bridge is loaded automatically)
+                    Thread.GetCurrentJsFileUri()
+                }
+            );
 
-                    // Run the first benchmark
-                    BenchmarkPrimes();
-                },
-                500);
+            // Set a message handler on the thread
+            t.OnMessage += o =>
+            {
+                // Print the message received from the thread
+                Script.Call("console.log", "Got message in main thread: ", o);
+            };
+
+            // Send a message to the worker
+            t.PostMessage("hello from main thread:)");
+
+            Window.SetTimeout(BenchmarkPrimes, 500);
+        }
+
+        // It is also possible to use threads without starting any thread start functions
+        // Just use Init and then check if the current thread is a web worker or not
+        [Init]
+        private static void MessagePassingThread()
+        {
+            if (!Thread.CurrentThread.IsWebWorker)
+                return;
+
+            // Set an on message handler for this web worker
+            Thread.CurrentThread.OnMessage += o =>
+            {
+                // log the received message
+                Script.Call("console.log", "Got message in worker: ", o);
+                // Send a message back in reply
+                Thread.CurrentThread.PostMessage("hello from the worker thread :)");
+            };
         }
     }
 }

@@ -1110,6 +1110,11 @@
             Returns the string value of the constructor name. In the case of the Uint8ClampedArray type: "Uint8ClampedArray".
             </summary>
         </member>
+        <member name="T:Bridge.Internal.Html5.Worker">
+            <summary>
+            External binding to the Worker HTML5 interface
+            </summary>
+        </member>
         <member name="T:Bridge.ConventionAttribute">
             <summary>
             Controls a type or type members case notation in the script output.
@@ -10998,7 +11003,7 @@
             </summary>
             <returns>The current js file path (As a fully formed Uri).</returns>
         </member>
-        <member name="M:System.Threading.Thread.#ctor(System.String[])">
+        <member name="M:System.Threading.Thread.#ctor(System.Collections.Generic.IEnumerable{System.String})">
             <summary>
             Initializes a new instance of the <see cref="T:System.Threading.Thread"/> class.
             </summary>
@@ -11029,12 +11034,18 @@
             <param name="param">The parameter to be sent to the function when it is started</param>
             <param name="onResult">The callback to be called when the function finishes, callback format is (this thread, the initial parameter, the result from the function)</param>
         </member>
-        <member name="M:System.Threading.Thread.HandleMessage(System.Threading.Utils.Worker.DataEvent)">
+        <member name="M:System.Threading.Thread.HandleMessage(Bridge.Internal.Html5.Worker.DataEvent)">
             <summary>
             Handles messages sent back from the web worker
             </summary>
             <returns>Nothing.</returns>
             <param name="arg">The message sent from the web worker</param>
+        </member>
+        <member name="M:System.Threading.Thread.PostMessage(System.Object)">
+            <summary>
+            Posts a custom message back to the parent thread
+            </summary>
+            <param name="msg">The custom object to send as the message</param>
         </member>
         <member name="M:System.Threading.Thread.Join(System.Action)">
             <summary>
@@ -11073,11 +11084,6 @@
             </summary>
             <value>The result return from the last thread start that finished that did not have an on result callback set</value>
         </member>
-        <member name="F:System.Threading.Thread._result">
-            <summary>
-            Used to store the actual result received from the last thread start that did not have an on result callback set
-            </summary>
-        </member>
         <member name="F:System.Threading.Thread._worker">
             <summary>
             The web worker that is running the thread start functions
@@ -11106,6 +11112,17 @@
         <member name="F:System.Threading.Thread._currentThreadId">
             <summary>
             The current thread identifier, used only when web workers are unavailable
+            </summary>
+        </member>
+        <member name="E:System.Threading.Thread.OnMessageStore">
+            <summary>
+            OnMessage event handler for creating custom message passing between threads
+            The callback parameter is the object passed to Thread::PostMessage
+            </summary> 
+        </member>
+        <member name="P:System.Threading.Thread.IsWebWorker">
+            <summary>
+            Tests if this is a web worker or not.
             </summary>
         </member>
         <member name="T:System.Threading.Tasks.IPromise">
@@ -11187,11 +11204,6 @@
             The task completed due to an unhandled exception.
             </summary>
         </member>
-        <member name="T:System.Threading.Utils.Worker">
-            <summary>
-            External binding to the Worker HTML5 interface
-            </summary>
-        </member>
         <member name="T:System.Threading.Utils.WorkerThreadManager">
             <summary>
             Worker thread manager, manages the thread starts for this thread if it is a web worker.
@@ -11226,6 +11238,12 @@
             </summary>
             <returns>The thread identifier.</returns>
         </member>
+        <member name="E:System.Threading.Utils.WorkerThreadManager.OnMessage">
+            <summary>
+            OnMessage event handler for creating custom message passing between threads
+            The callback parameter is the object passed to Thread::PostMessage
+            </summary> 
+        </member>
         <member name="M:System.Threading.Utils.WorkerThreadManager.WorkerThreadManagerEntryPoint">
             <summary>
             The global entry point that is called as soon as the bridge runtime has loaded if this is a web worker
@@ -11247,41 +11265,49 @@
             <param name="o">The root object (usually window)</param>
             <param name="s">The string representing the path to the object</param>
         </member>
-        <member name="M:System.Threading.Utils.WorkerThreadManager.HandleMessage(System.Threading.Utils.Worker.DataEvent)">
+        <member name="M:System.Threading.Utils.WorkerThreadManager.HandleMessage(Bridge.Internal.Html5.Worker.DataEvent)">
             <summary>
             Handles messages sent from the main thread
             </summary>
             <returns>Nothing.</returns>
             <param name="arg">The message sent from the main thread</param>
         </member>
-        <member name="T:System.Threading.Utils.WorkerThreadManager.MessageType">
+        <member name="M:System.Threading.Utils.WorkerThreadManager.PostMessage(System.Object)">
+            <summary>
+            Posts a custom message back to the parent thread
+            </summary>
+            <param name="msg">The custom object to send as the message</param>
+        </member>
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeLoadScripts">
             <summary>
             Message types that can be sent between the main thread and the web worker
-            </summary>
-        </member>
-        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageType.LoadScripts">
-            <summary>
+            
             Load scripts in to the web worker (Sent from the main thread to the worker)
             </summary>
         </member>
-        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageType.Start">
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeStart">
             <summary>
             Start and execute a thread start function (Sent from the main thread to the worker)
             </summary>
         </member>
-        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageType.Finish">
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeFinish">
             <summary>
             The thread has finished, pass the result back to the main thread (Sent from the worker to the main thread)
             </summary>
         </member>
-        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageType.Exception">
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeException">
             <summary>
             An exception was raised running a thread start function (Sent from the worker to the main thread)
             </summary>
         </member>
-        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageType.ScriptLoadException">
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeScriptLoadException">
             <summary>
             An exeption was raised while loading a script in to the web worker (Sent from the worker to the main thread)
+            </summary>
+        </member>
+        <member name="F:System.Threading.Utils.WorkerThreadManager.MessageTypeMessage">
+            <summary>
+            A custom message can be sent between threads
             </summary>
         </member>
         <member name="T:System.Threading.Utils.WorkerThreadManager.WebWorkerMessage">

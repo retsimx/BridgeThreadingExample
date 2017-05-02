@@ -46,7 +46,6 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <Content Include="demo.html" />
     <Content Include="docs\bridge.js" />
     <Content Include="docs\bridge.min.js" />
     <Content Include="docs\Threading.js" />

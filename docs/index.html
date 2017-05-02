@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 
 <html lang="en" xmlns="http://www.w3.org/1999/xhtml">
 <head>
@@ -6,9 +6,10 @@
     <title>Bridge </title>
 </head>
 <body>
-    <p>Running benchmark, the first baseline run on the main thread may take a few seconds, be patient, your browser will unfreeze as soon as the baseline benchmark has finished (~6s on an i7-4930k)</p>
-    <p>Open your browsers debug console to see the results.</p>
+    <p>Running benchmark, the last run is on the main thread and may take a few seconds, be patient, your browser will unfreeze as soon as the run has has finished (~7s on an i7-4930k)</p>
+    <p>Workers can not access the DOM, so there may be additional output in the debug console.</p>
     <script src="bridge.js"></script>
+    <script src="bridge.console.min.js"></script>
     <script src="Threading.js"></script>
 </body>
 </html>
